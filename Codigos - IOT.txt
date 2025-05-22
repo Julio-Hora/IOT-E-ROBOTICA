@@ -1,0 +1,85 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// Endereço do LCD (padrão geralmente 0x27 ou 0x3F)
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+int Ultrasonic = 0;
+
+long readUltrasonicDistance(int triggerPin, int echoPin)
+{
+  pinMode(triggerPin, OUTPUT);  
+  digitalWrite(triggerPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(triggerPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(triggerPin, LOW);
+  pinMode(echoPin, INPUT);
+  return pulseIn(echoPin, HIGH);
+}
+
+void setup()
+{
+  // Inicialização do LCD
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("Iniciando...");
+
+  delay(1500); // Aguarda 1.5s para exibir a mensagem
+
+  // Configuração dos pinos dos motores
+  pinMode(3, OUTPUT); // PWM M. direita
+  pinMode(4, OUTPUT); // IN1 M. direita
+  pinMode(5, OUTPUT); // IN2 M. direita
+
+  pinMode(6, OUTPUT); // PWM M. esquerda
+  pinMode(7, OUTPUT); // IN1 M. esquerda
+  pinMode(8, OUTPUT); // IN2 M. esquerda
+}
+
+void loop()
+{
+  // Leitura da distância
+  Ultrasonic = 0.01723 * readUltrasonicDistance(13, 2); // Trigger no 13, Echo no 2
+
+  // Atualiza o LCD com a distância
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Dist: ");
+  lcd.print(Ultrasonic);
+  lcd.print(" cm");
+
+  // Lógica de desvio de obstáculos
+  if (Ultrasonic <= 30) {
+    lcd.setCursor(0, 1);
+    lcd.print("Desviando...");
+
+    // M. DIREITA
+    analogWrite(3, 100);
+    digitalWrite(4, LOW);
+    digitalWrite(5, LOW);
+
+    // M. ESQUERDA
+    analogWrite(6, 100);
+    digitalWrite(7, HIGH);
+    digitalWrite(8, LOW);
+
+    delay(700); // Tempo de desvio
+  } else {
+    lcd.setCursor(0, 1);
+    lcd.print("Livre        ");
+
+    // M. DIREITA
+    analogWrite(3, 100);
+    digitalWrite(4, HIGH);
+    digitalWrite(5, LOW);
+
+    // M. ESQUERDA
+    analogWrite(6, 100);
+    digitalWrite(7, LOW);
+    digitalWrite(8, HIGH);
+  }
+
+  delay(200); // Pequeno atraso para estabilidade
+}
